@@ -166,7 +166,7 @@ export default function AddUser() {
                                     id="role"
                                     name="role"
                                 >
-                                    <option value="worker">Worker</option>
+                                    <option value="customer">Customer</option>
                                     <option value="admin">Admin</option>
                                     <option value="seller">Seller</option>
                                 </Field>
