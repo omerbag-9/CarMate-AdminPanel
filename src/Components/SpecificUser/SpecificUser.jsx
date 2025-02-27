@@ -1,55 +1,107 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Loader from '../Loader/Loader';
 
 // Validation Schema
 const validationSchema = Yup.object({
     firstName: Yup.string().required('First name is required'),
     lastName: Yup.string().required('Last name is required'),
-    email: Yup.string().email('Invalid email format').required('Email is required'),
-    password: Yup.string().matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%?&#])[A-Za-z\d@$!%?&#]{6,100}$/,'Password must contain at least one lowercase letter, one uppercase letter, one digit, one special character, and be at least 6 characters long').required('Password is required'),
+    // Email validation removed since it's disabled
+    password: Yup.string().min(6, 'Password must be at least 6 characters'),
     phone: Yup.string().matches(/^[0-9]+$/, 'Phone must be a valid number'),
     role: Yup.string().required('Role is required'),
     isActive: Yup.string().required('Active status is required'),
     status: Yup.string().required('Status is required'),
 });
 
-export default function AddUser() {
+export default function UpdateUser() {
     const navigate = useNavigate();
-
-    const initialValues = {
+    const { id } = useParams(); // Get user ID from URL (e.g., /update-user/29)
+    const [initialValues, setInitialValues] = useState({
         firstName: '',
         lastName: '',
         email: '',
         password: '',
         phone: '',
-        role: 'customer',
-        isActive: 'Yes',
-        status: 'verified',
-    };
+        role: '',
+        isActive: '',
+        status: '',
+    });
+    const [loading, setLoading] = useState(true);
+
+    // Fetch user data when component mounts
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const response = await axios.get(`https://fb-m90x.onrender.com/admin/getSpecificUser/${id}`, {
+                    headers: {
+                        token: Cookies.get('token'),
+                    },
+                });
+                const userData = response.data.data; // Adjust based on your API response structure
+                console.log('Fetched User Data:', userData); // Debug log
+
+                const userValues = {
+                    firstName: userData.user.firstName || '',
+                    lastName: userData.user.lastName || '',
+                    email: userData.user.email || '',
+                    password: '', // Leave blank for updates
+                    phone: userData.user.phone || '',
+                    role: userData.user.role || '',
+                    isActive: userData.user.isActive ? 'Yes' : 'No', // Convert boolean to Yes/No
+                    status: userData.user.status || '',
+                };
+                setInitialValues(userValues);
+                setLoading(false);
+            } catch (error) {
+                console.error('Error fetching user:', error.response?.data || error);
+                toast.error('Failed to load user data');
+                setLoading(false);
+            }
+        };
+        fetchUser();
+    }, [id]);
 
     const handleSubmit = async (values, { setSubmitting, setStatus }) => {
         try {
-            const response = await axios.post(
-                'https://fb-m90x.onrender.com/admin/addUser',
-                {
-                    ...values,
-                    isActive: values.isActive === 'Yes',
-                },
+            // Include only the necessary fields in payload
+            // Email is excluded as it's disabled
+            const payload = {
+                firstName: values.firstName,
+                lastName: values.lastName,
+                phone: values.phone,
+                role: values.role,
+                isActive: values.isActive === 'Yes', // Convert to boolean
+                status: values.status,
+            };
+
+            // Include password only if provided
+            if (values.password) {
+                payload.password = values.password;
+            }
+
+            console.log('Payload to Send:', payload); // Debug log to verify payload
+
+            const response = await axios.put(
+                `https://fb-m90x.onrender.com/admin/updateUser/${id}`,
+                payload,
                 {
                     headers: {
                         token: Cookies.get('token'),
                     },
                 }
             );
-            
-            if (response.data.status === 'user created successfully') {
-                toast.success('User added successfully!', {
+
+            console.log('Update Response:', response.data); // Debug log
+
+            if (response.data.status === 'user updated successfully') {
+                toast.success('User updated successfully!', {
                     position: 'top-right',
                     autoClose: 3000,
                     hideProgressBar: false,
@@ -57,21 +109,28 @@ export default function AddUser() {
                     pauseOnHover: true,
                     draggable: true,
                 });
-                // Delay navigation to allow toast to display
                 setTimeout(() => {
                     navigate('/users');
-                }, 1500); // 1.5 seconds delay
+                }, 1500); // Delay navigation
             } else {
-                console.log('Success condition not met:', response.data.message);
+                console.log('Success condition not met:', response.data.status);
             }
         } catch (error) {
-            console.error('Error adding user:', error.response?.data);
-            setStatus(error.response?.data?.message || 'Error adding user');
-            toast.error(error.response?.data?.message || 'Error adding user'); // Optional: Show error toast
+            console.error('Error updating user:', error.response?.data);
+            setStatus(error.response?.data?.message || 'Error updating user');
+            toast.error(error.response?.data?.message || 'Error updating user');
         } finally {
             setSubmitting(false);
         }
     };
+
+    if (loading) {
+        return (
+            <div className="container text-center mt-5">
+                <Loader />
+            </div>
+        );
+    }
 
     return (
         <div className="container">
@@ -79,17 +138,16 @@ export default function AddUser() {
 
             <Formik
                 initialValues={initialValues}
+                enableReinitialize={true} // Reinitialize form when initialValues change
                 validationSchema={validationSchema}
                 onSubmit={handleSubmit}
             >
-                {({ isSubmitting, status, resetForm }) => (
+                {({ isSubmitting, status }) => (
                     <Form className="bg-dark text-white p-4 rounded">
-                        <h2 className="text-center mb-5 mt-3">Add User</h2>
+                        <h2 className="text-center mb-5 mt-3">Update User</h2>
 
                         {status && (
-                            <div className="alert alert-danger mb-4">
-                                {status}
-                            </div>
+                            <div className="alert alert-danger mb-4">{status}</div>
                         )}
 
                         <div className="row g-5">
@@ -127,14 +185,15 @@ export default function AddUser() {
                                     className="form-control"
                                     id="email"
                                     name="email"
+                                    disabled={true} // Email field is disabled
                                 />
-                                <ErrorMessage name="email" component="div" className="text-danger mt-1" />
+                                <small className="form-text text-muted">Email cannot be changed</small>
                             </div>
 
                             {/* Second row - 3 inputs */}
                             <div className="col-md-4">
                                 <label htmlFor="password" className="form-label">
-                                    <i className="fas fa-lock me-2"></i>Password
+                                    <i className="fas fa-lock me-2"></i>Password (Leave blank to keep unchanged)
                                 </label>
                                 <Field
                                     type="password"
@@ -166,9 +225,8 @@ export default function AddUser() {
                                     id="role"
                                     name="role"
                                 >
-                                    <option value="worker">Worker</option>
-                                    <option value="admin">Admin</option>
                                     <option value="seller">Seller</option>
+                                    <option value="customer">Customer</option>
                                 </Field>
                                 <ErrorMessage name="role" component="div" className="text-danger mt-1" />
                             </div>
@@ -209,20 +267,12 @@ export default function AddUser() {
 
                         <div className="d-flex justify-content-end mt-3">
                             <button
-                                type="button"
-                                className="btn btn-danger me-2"
-                                onClick={() => resetForm()}
-                                disabled={isSubmitting}
-                            >
-                                <i className="fas fa-trash me-2"></i>Clear
-                            </button>
-                            <button
                                 type="submit"
                                 className="btn btn-primary"
                                 disabled={isSubmitting}
                             >
-                                <i className="fas fa-plus me-2"></i>
-                                {isSubmitting ? 'Adding...' : 'Add'}
+                                <i className="fas fa-save me-2"></i>
+                                {isSubmitting ? 'Updating...' : 'Update'}
                             </button>
                         </div>
                     </Form>

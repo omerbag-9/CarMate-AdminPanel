@@ -1,14 +1,17 @@
 import axios from 'axios'
 import { useFormik } from 'formik'
-import React, { useState } from 'react'
+import React, { useContext, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import * as yup from 'yup'
-
+import Cookies from 'js-cookie'
+import { UserContext } from '../../Context/UserContext'
 
 
 export default function Login() {
   let [isLoading, setIsloading] = useState(false)
   let [errMsg, setErrMsg] = useState('')
+  let {userToken ,setUserToken} = useContext(UserContext)
+  let {role , setRole} = useContext(UserContext)
   let navigate = useNavigate()
 
   const validationSchema = yup.object({
@@ -26,13 +29,21 @@ export default function Login() {
   })
 
   async function loginSubmit(values){
+    setIsloading(true)
     let {data} = await axios.post('https://fb-m90x.onrender.com/admin/login/admin/145461456',values).catch((err)=>{
-      console.log(err.message);
       setErrMsg(err.message)
-      
+      setIsloading(false)
     })
-    console.log(data);
-    navigate('/')
+    if(data.status == 'login successfully'){
+      setIsloading(false)
+      Cookies.set('token',data.data.token)
+      Cookies.set('role',data.data.role)
+      setUserToken(data.data.token)
+      setRole(data.data.role)    
+      navigate('/')
+    }
+    
+
   }
 
   return (
@@ -58,10 +69,12 @@ export default function Login() {
                 <input className='form-control mb-2' type="password" id='password' name='password' placeholder='*********' onChange={formik.handleChange} onBlur={formik.handleBlur} value={formik.values.password} />
                 {formik.touched.password && formik.errors.password ? <div className="alert alert-danger p-1 mt-2">{formik.errors.password}</div> : ''}
 
-
+                {isLoading ? <button disabled={!(formik.isValid && formik.dirty)} type='button' className='btn btn-primary w-100 my-3' >Loading...</button> 
+                :
                 <button type='submit' className='btn btn-primary w-100 my-3'>
                     Sign In
                 </button>
+                }
             </form>
         </div>
     </div>

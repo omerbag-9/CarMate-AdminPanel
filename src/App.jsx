@@ -13,23 +13,40 @@ import Worker from './Components/Worker/Worker'
 import Product from './Components/Product/Product'
 import AddUser from './Components/AddUser/AddUser'
 import AddProduct from './Components/AddProduct/AddProduct'
+import ProtectedRoute from './Components/ProtectedRoute/ProtectedRoute'
+import MyProducts from './Components/MyProducts/MyProducts'
+import SpecificUser from './Components/SpecificUser/SpecificUser'
+import SpecificWorker from './Components/SpecificWorker/SpecificWorker'
+import AddWorker from './Components/AddWorker/AddWorker'
 
 
 let routers = createBrowserRouter([
-  {path:'/' , element: <Layout/> ,children:[
-    {path:'/' , element: <Home/>,children:[
-      {path:'users' , element:<User/>},
-      {path:'workers' , element:<Worker/>},
-      {path:'sellers' , element:<Seller/>},
-      {path:'products' , element:<Product/>},
-      {path:'add-user' , element:<AddUser/>},
-      {path:'add-product' , element:<AddProduct/>},
-    ]},
-    {path:'login' , element: <Login/>},
-    {path:'*' , element: <Notfound/>}
-  ]}
-
-])
+  {
+    path: '/login',
+    element: <Login />
+  },
+  {
+    path: '/',
+    element: <ProtectedRoute><Layout /></ProtectedRoute>,
+    children: [
+      { path: '/', element: <ProtectedRoute><Home /></ProtectedRoute> },
+      { path: 'users', element: <ProtectedRoute><User /></ProtectedRoute> },
+      { path: 'workers', element: <ProtectedRoute><Worker /></ProtectedRoute> },
+      { path: 'sellers', element: <ProtectedRoute><Seller /></ProtectedRoute> },
+      { path: 'products', element: <ProtectedRoute><Product /></ProtectedRoute> },
+      { path: 'myproducts', element: <ProtectedRoute><MyProducts /></ProtectedRoute> },
+      { path: 'add-user', element: <ProtectedRoute><AddUser /></ProtectedRoute> },
+      { path: 'add-product', element: <ProtectedRoute><AddProduct /></ProtectedRoute> },
+      {path:'specific-user/:id',element:<ProtectedRoute><SpecificUser/></ProtectedRoute>},
+      {path:'specific-worker/:id',element:<ProtectedRoute><SpecificWorker/></ProtectedRoute>},
+      {path:'add-worker',element:<ProtectedRoute><AddWorker/></ProtectedRoute>},
+    ]
+  },
+  {
+    path: '*',
+    element: <Notfound />
+  }
+]);
 function App() {
 
   return (
