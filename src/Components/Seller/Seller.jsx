@@ -68,8 +68,8 @@ const UserAnalytics = ({ users }) => {
 };
 
 export default function Seller() {
-    const [paginatedUsers, setPaginatedUsers] = useState([]); // For the table (paginated)
-    const [allUsers, setAllUsers] = useState([]); // For analytics (all users)
+    const [allUsersData, setAllUsersData] = useState([]); // All sellers for analytics and filtering
+    const [paginatedUsers, setPaginatedUsers] = useState([]); // Displayed sellers
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -81,57 +81,80 @@ export default function Seller() {
         status: ''
     });
 
-    // Fetch paginated users for the table
-    async function getPaginatedUsers(page = 1) {
+    const ITEMS_PER_PAGE = 5;
+
+    // Fetch all sellers at once
+    async function fetchAllSellers() {
         setLoading(true);
         try {
-            let url = `https://fb-m90x.onrender.com/admin/getsellerusers?page=${page}&size=5`;
-            if (searchTerm) url += `&firstName=${searchTerm}`; // Changed from keyword to firstName
-            if (filters.sortBy) url += `&sort=${filters.sortBy}:${filters.order}`;
+            let url = `https://fb-m90x.onrender.com/admin/getsellerusers?size=1000`;
             if (filters.isActive) url += `&isActive=${filters.isActive}`;
             if (filters.status) url += `&status=${filters.status}`;
 
             const { data } = await axios.get(url, { headers: { token: Cookies.get('token') } });
-            setPaginatedUsers(data.data);
-            setTotalPages(Math.ceil(data.count / 5));
+            setAllUsersData(data.data);
             setLoading(false);
         } catch (error) {
-            console.error('Error fetching paginated users:', error);
+            console.error('Error fetching all sellers:', error);
             setLoading(false);
         }
     }
 
-    // Fetch all users for analytics
-    async function getAllUsers() {
-        try {
-            // Fetch all users without pagination (assuming API supports this; adjust if needed)
-            let url = `https://fb-m90x.onrender.com/admin/getcustomerusers?size=1000`; // Large size to get all, or modify API
-            const { data } = await axios.get(url, { headers: { token: Cookies.get('token') } });
-            setAllUsers(data.data);
-        } catch (error) {
-            console.error('Error fetching all users:', error);
+    // Apply client-side filtering and pagination
+    useEffect(() => {
+        let filteredUsers = allUsersData;
+
+        if (searchTerm) {
+            const lowercaseSearch = searchTerm.toLowerCase();
+            filteredUsers = allUsersData.filter(user =>
+                user.firstName && user.firstName.toLowerCase().includes(lowercaseSearch)
+            );
         }
-    }
+
+        if (filters.sortBy) {
+            filteredUsers = [...filteredUsers].sort((a, b) => {
+                let valueA = a[filters.sortBy];
+                let valueB = b[filters.sortBy];
+                if (typeof valueA === 'string') {
+                    valueA = valueA.toLowerCase();
+                    valueB = valueB.toLowerCase();
+                    return filters.order === 'asc'
+                        ? valueA.localeCompare(valueB)
+                        : valueB.localeCompare(valueA);
+                } else {
+                    return filters.order === 'asc'
+                        ? valueA - valueB
+                        : valueB - valueA;
+                }
+            });
+        }
+
+        const calculatedTotalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+        setTotalPages(calculatedTotalPages);
+
+        if (currentPage > calculatedTotalPages && calculatedTotalPages > 0) {
+            setCurrentPage(1);
+        }
+
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        const paginatedResults = filteredUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+        setPaginatedUsers(paginatedResults);
+    }, [allUsersData, searchTerm, filters, currentPage]);
+
+    useEffect(() => {
+        fetchAllSellers();
+    }, [filters.isActive, filters.status]);
 
     async function deleteUser(id) {
         try {
             await axios.delete(`https://fb-m90x.onrender.com/admin/deleteuser/${id}`, {
                 headers: { token: Cookies.get('token') }
             });
-            getPaginatedUsers(currentPage); // Refresh paginated users
-            getAllUsers(); // Refresh all users for analytics
+            fetchAllSellers();
         } catch (err) {
             console.error('Error deleting user:', err);
         }
     }
-
-    useEffect(() => {
-        getPaginatedUsers(currentPage); // Fetch paginated users when page or filters change
-    }, [currentPage, filters, searchTerm]);
-
-    useEffect(() => {
-        getAllUsers(); // Fetch all users once on mount
-    }, []); // Empty dependency array to run only once
 
     const handleSearch = (e) => {
         setSearchTerm(e.target.value);
@@ -144,7 +167,6 @@ export default function Seller() {
             sortBy: field,
             order: prev.sortBy === field && prev.order === 'asc' ? 'desc' : 'asc'
         }));
-        setCurrentPage(1);
     };
 
     const handlePrevPage = () => {
@@ -163,7 +185,7 @@ export default function Seller() {
                     <input
                         type="search"
                         className="form-control bg-dark text-white ps-5 border-0 custom-placeholder"
-                        placeholder="Search by first name"
+                        placeholder="Search by first name (type to search)"
                         style={{ height: '45px' }}
                         value={searchTerm}
                         onChange={handleSearch}
@@ -176,8 +198,7 @@ export default function Seller() {
                         data-bs-toggle="dropdown"
                         aria-expanded="false"
                     >
-                        <i className="fa-solid fa-sliders"></i>
-                        Filters
+                        <i className="fa-solid fa-sliders"></i> Filters
                     </button>
                     <ul className="dropdown-menu dropdown-menu-dark">
                         <li><button className="dropdown-item" onClick={() => setFilters(prev => ({ ...prev, isActive: '', status: '' }))}>All Users</button></li>
@@ -221,47 +242,47 @@ export default function Seller() {
                             </tr>
                         </thead>
                         <tbody>
-                            {paginatedUsers.map((user) => (
-                                <tr key={user.id}>
-                                    <td>
-                                        <Link to={`/specific-user/${user.id}`}>
-                                            <button className="btn btn-outline-light py-0">details</button>
-                                        </Link>
-                                    </td>
-                                    <td>{user.id}</td>
-                                    <td>{user.firstName}</td>
-                                    <td>{user.phone ? user.phone : 'N/A'}</td>
-                                    <td>{user.role}</td>
-                                    <td>{user.isActive ? 'yes' : 'no'}</td>
-                                    <td>
-                                        <span className={`badge ${user.status === 'verified' ? 'bg-success' : user.status === 'pending' ? 'bg-warning' : 'bg-danger'}`}>
-                                            {user.status}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div className="d-flex justify-content-center gap-2">
-                                            <button onClick={() => deleteUser(user.id)} className="bg-transparent border-0 p-1">
-                                                <i className="fas fa-trash text-danger"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                            {paginatedUsers.length > 0 ? (
+                                paginatedUsers.map((user) => (
+                                    <tr key={user.id}>
+                                        <td><Link to={`/specific-user/${user.id}`}><button className="btn btn-outline-light py-0">details</button></Link></td>
+                                        <td>{user.id}</td>
+                                        <td>{user.firstName}</td>
+                                        <td>{user.phone || 'N/A'}</td>
+                                        <td>{user.role}</td>
+                                        <td>{user.isActive ? 'yes' : 'no'}</td>
+                                        <td>
+                                            <span className={`badge ${user.status === 'verified' ? 'bg-success' : user.status === 'pending' ? 'bg-warning' : 'bg-danger'}`}>
+                                                {user.status}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div className="d-flex justify-content-center gap-2">
+                                                <button onClick={() => deleteUser(user.id)} className="bg-transparent border-0 p-1">
+                                                    <i className="fas fa-trash text-danger"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr><td colSpan="8" className="text-center">No sellers found</td></tr>
+                            )}
                         </tbody>
                         <tfoot>
                             <tr>
                                 <td colSpan="8">
                                     <div className="d-flex my-2 justify-content-between align-items-center">
                                         <button className="btn btn-secondary" onClick={handlePrevPage} disabled={currentPage === 1}>Previous</button>
-                                        <span className="text-white">Page {currentPage} of {totalPages}</span>
-                                        <button className="btn btn-secondary" onClick={handleNextPage} disabled={currentPage === totalPages}>Next</button>
+                                        <span className="text-white">Page {currentPage} of {totalPages || 1}</span>
+                                        <button className="btn btn-secondary" onClick={handleNextPage} disabled={currentPage === totalPages || totalPages === 0}>Next</button>
                                     </div>
                                 </td>
                             </tr>
                         </tfoot>
                     </table>
 
-                    <UserAnalytics users={allUsers} /> {/* Pass allUsers instead of paginatedUsers */}
+                    <UserAnalytics users={allUsersData} />
                 </div>
             )}
         </div>

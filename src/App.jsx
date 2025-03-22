@@ -18,6 +18,8 @@ import MyProducts from './Components/MyProducts/MyProducts'
 import SpecificUser from './Components/SpecificUser/SpecificUser'
 import SpecificWorker from './Components/SpecificWorker/SpecificWorker'
 import AddWorker from './Components/AddWorker/AddWorker'
+import Category from './Components/Category/Category'
+import GetSpecificProduct from './Components/GetSpecificProduct/GetSpecificProduct'
 
 
 let routers = createBrowserRouter([
@@ -36,9 +38,11 @@ let routers = createBrowserRouter([
       { path: 'products', element: <ProtectedRoute><Product /></ProtectedRoute> },
       { path: 'myproducts', element: <ProtectedRoute><MyProducts /></ProtectedRoute> },
       { path: 'add-user', element: <ProtectedRoute><AddUser /></ProtectedRoute> },
-      { path: 'add-product', element: <ProtectedRoute><AddProduct /></ProtectedRoute> },
+      { path: '/seller/add-product', element: <ProtectedRoute><AddProduct /></ProtectedRoute> },
+      { path: 'Category', element: <ProtectedRoute><Category /></ProtectedRoute> },
       {path:'specific-user/:id',element:<ProtectedRoute><SpecificUser/></ProtectedRoute>},
       {path:'specific-worker/:id',element:<ProtectedRoute><SpecificWorker/></ProtectedRoute>},
+      {path:'/seller/getSpecificProduct/:id',element:<ProtectedRoute><GetSpecificProduct/></ProtectedRoute>},
       {path:'add-worker',element:<ProtectedRoute><AddWorker/></ProtectedRoute>},
     ]
   },

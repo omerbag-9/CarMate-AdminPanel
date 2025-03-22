@@ -9,6 +9,7 @@ const navItems = [
     { path: '/workers', icon: 'fa-solid fa-users', text: 'Worker', roles: ['admin'] },
     { path: '/sellers', icon: 'fa-solid fa-award', text: 'Seller', roles: ['admin'] },
     { path: '/products', icon: 'fa-solid fa-chart-line', text: 'Product', roles: ['admin'] },
+    { path: '/category', icon: 'fa-solid fa-list', text: 'Category', roles: ['admin'] },
     { path: '/myProducts', icon: 'fa-solid fa-chart-line', text: 'Product', roles: ['seller'] },
 ];
 
