@@ -23,7 +23,7 @@ export default function Product() {
         setLoading(true);
         try {
             let url = `https://fb-m90x.onrender.com/admin/getAllproducts?size=1000`;
-            const { data } = await axios.get(url, { headers: { token: Cookies.get('token') } }); // Fixed typo here
+            const { data } = await axios.get(url, { headers: { token: Cookies.get('token') } });
             setAllProductsData(data.data);
             setLoading(false);
         } catch (error) {
@@ -47,9 +47,16 @@ export default function Product() {
             filteredProducts = [...filteredProducts].sort((a, b) => {
                 let valueA = a[filters.sortBy];
                 let valueB = b[filters.sortBy];
-                if (typeof valueA === 'string') {
-                    valueA = valueA.toLowerCase();
-                    valueB = valueB.toLowerCase();
+                
+                // Handle null or undefined values
+                if (valueA === null || valueA === undefined) valueA = '';
+                if (valueB === null || valueB === undefined) valueB = '';
+                
+                // Handle string comparison vs. numeric comparison
+                if (typeof valueA === 'string' || typeof valueB === 'string') {
+                    // Convert both to strings to ensure safe comparison
+                    valueA = String(valueA).toLowerCase();
+                    valueB = String(valueB).toLowerCase();
                     return filters.order === 'asc'
                         ? valueA.localeCompare(valueB)
                         : valueB.localeCompare(valueA);
@@ -120,26 +127,28 @@ export default function Product() {
 
     return (
         <div className="d-flex flex-column">
-            <div className="d-flex align-items-center gap-3 p-3 mt-4">
-                <div className="position-relative flex-grow-1">
+            {/* Top controls - fully responsive */}
+            <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2 gap-md-3 p-2 p-md-3 mt-2 mt-md-4">
+                <div className="position-relative flex-grow-1 w-100">
                     <i className="fa-solid fa-magnifying-glass position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"></i>
                     <input
                         type="search"
                         className="form-control bg-dark text-white ps-5 border-0 custom-placeholder"
-                        placeholder="Search by title (type to search)"
+                        placeholder="Search by title"
                         style={{ height: '45px' }}
                         value={searchTerm}
                         onChange={handleSearch}
                     />
                 </div>
-                <div className="dropdown">
+                <div className="dropdown mt-2 mt-md-0 w-100 w-md-auto">
                     <button
-                        className="btn btn-outline-light d-flex align-items-center gap-2"
+                        className="btn btn-outline-light d-flex align-items-center gap-2 w-100"
                         type="button"
                         data-bs-toggle="dropdown"
                         aria-expanded="false"
                     >
-                        <i className="fa-solid fa-sort"></i> Price Filter
+                        <i className="fa-solid fa-sort"></i>
+                        <span className="d-none d-sm-inline">Price Filter</span>
                     </button>
                     <ul className="dropdown-menu dropdown-menu-dark">
                         <li><button className="dropdown-item" onClick={handleSortAsc}>Price: Low to High</button></li>
@@ -153,66 +162,75 @@ export default function Product() {
             {loading ? (
                 <Loader />
             ) : (
-                <div className="container-fluid px-3">
-                    <table className="table table-dark table-hover">
-                        <thead>
-                            <tr>
-                                <th>Image</th>
-                                <th>ID</th>
-                                <th>Title</th>
-                                <th>
-                                    Price
-                                    {filters.sortBy === 'price' && (
-                                        <i className={`fas fa-sort-${filters.order === 'asc' ? 'up' : 'down'} text-muted ms-1`}></i>
-                                    )}
-                                </th>
-                                <th>Category</th>
-                                <th>Created</th>
-                                <th>Product Link</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {paginatedProducts.length > 0 ? (
-                                paginatedProducts.map((product) => (
-                                    <tr key={product.id}>
-                                        <td>
-                                            <img
-                                                src={product.mainImage}
-                                                alt={product.title}
-                                                style={{ width: '50px', height: '50px', objectFit: 'cover' }}
-                                                className="rounded"
-                                            />
-                                        </td>
-                                        <td>{product.id}</td>
-                                        <td>{product.title}</td>
-                                        <td>${product.price}</td>
-                                        <td>Category {product.categoryId}</td>
-                                        <td>{formatDate(product.createdAt)}</td>
-                                        <td>
-                                            <div className="d-flex justify-content-center gap-2">
-                                                <Link to={product.productLink} target="_blank" className="bg-transparent border-0 p-1">
-                                                    <i className="fas fa-link text-primary"></i>
-                                                </Link>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr><td colSpan="7" className="text-center">No products found</td></tr>
-                            )}
-                        </tbody>
-                        <tfoot>
-                            <tr>
-                                <td colSpan="7">
-                                    <div className="d-flex my-2 justify-content-between align-items-center">
-                                        <button className="btn btn-secondary" onClick={handlePrevPage} disabled={currentPage === 1}>Previous</button>
-                                        <span className="text-white">Page {currentPage} of {totalPages || 1}</span>
-                                        <button className="btn btn-secondary" onClick={handleNextPage} disabled={currentPage === totalPages || totalPages === 0}>Next</button>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tfoot>
-                    </table>
+                <div className="container-fluid px-2 px-md-3">
+                    {/* Responsive table with horizontal scrolling on small screens */}
+                    <div className="table-responsive">
+                        <table className="table table-dark table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Image</th>
+                                    <th className="d-none d-md-table-cell">ID</th>
+                                    <th>Title</th>
+                                    <th>
+                                        Price
+                                        {filters.sortBy === 'price' && (
+                                            <i className={`fas fa-sort-${filters.order === 'asc' ? 'up' : 'down'} text-muted ms-1`}></i>
+                                        )}
+                                    </th>
+                                    <th className="d-none d-lg-table-cell">Category</th>
+                                    <th className="d-none d-md-table-cell">Created</th>
+                                    <th>Link</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {paginatedProducts.length > 0 ? (
+                                    paginatedProducts.map((product) => (
+                                        <tr key={product.id}>
+                                            <td>
+                                                <img
+                                                    src={product.mainImage}
+                                                    alt={product.title}
+                                                    style={{ width: '40px', height: '40px', objectFit: 'cover' }}
+                                                    className="rounded"
+                                                />
+                                            </td>
+                                            <td className="d-none d-md-table-cell">{product.id}</td>
+                                            <td>
+                                                <div className="text-truncate" style={{ maxWidth: '150px' }}>
+                                                    {product.title}
+                                                </div>
+                                            </td>
+                                            <td>${product.price}</td>
+                                            <td className="d-none d-lg-table-cell">Category {product.categoryId}</td>
+                                            <td className="d-none d-md-table-cell">{formatDate(product.createdAt)}</td>
+                                            <td>
+                                                <div className="d-flex justify-content-center">
+                                                    <Link to={product.productLink} target="_blank" className="bg-transparent border-0 p-1">
+                                                        <i className="fas fa-link text-primary"></i>
+                                                    </Link>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr><td colSpan="7" className="text-center">No products found</td></tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Pagination controls - optimized for mobile */}
+                    <div className="d-flex my-2 justify-content-between align-items-center flex-wrap px-2">
+                        <button className="btn btn-secondary btn-sm" onClick={handlePrevPage} disabled={currentPage === 1}>
+                            <i className="fas fa-chevron-left me-1 d-inline d-sm-none"></i>
+                            <span className="d-none d-sm-inline">Previous</span>
+                        </button>
+                        <span className="text-white my-2">Page {currentPage} of {totalPages || 1}</span>
+                        <button className="btn btn-secondary btn-sm" onClick={handleNextPage} disabled={currentPage === totalPages || totalPages === 0}>
+                            <span className="d-none d-sm-inline">Next</span>
+                            <i className="fas fa-chevron-right ms-1 d-inline d-sm-none"></i>
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

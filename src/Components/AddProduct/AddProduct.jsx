@@ -113,7 +113,7 @@ export default function AddProduct() {
         
         // Navigate to products page after short delay
         setTimeout(() => {
-          navigate('/seller/my-products');
+          navigate('/myProducts');
         }, 2000);
       }
     } catch (err) {

@@ -7,6 +7,7 @@ import Loader from '../Loader/Loader';
 
 const UserAnalytics = ({ users }) => {
     const statusChartRef = useRef(null);
+    const chartContainerRef = useRef(null);
 
     const calculateAnalytics = () => {
         const statusCount = users.reduce((acc, user) => {
@@ -36,15 +37,32 @@ const UserAnalytics = ({ users }) => {
                     }]
                 },
                 options: {
+                    maintainAspectRatio: false,
                     responsive: true,
                     plugins: {
-                        legend: { position: 'bottom', labels: { color: '#fff' } }
+                        legend: { 
+                            position: 'bottom', 
+                            labels: { color: '#fff' },
+                            // Make legend more responsive
+                            display: window.innerWidth > 400
+                        }
                     }
                 }
             });
         }
 
+        const handleResize = () => {
+            if (statusChartRef.current) {
+                // Update legend display based on screen size
+                statusChartRef.current.options.plugins.legend.display = window.innerWidth > 400;
+                statusChartRef.current.update();
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+
         return () => {
+            window.removeEventListener('resize', handleResize);
             if (statusChartRef.current) statusChartRef.current.destroy();
         };
     }, [users]);
@@ -56,7 +74,16 @@ const UserAnalytics = ({ users }) => {
                 <div className="col-12 col-md-8 col-lg-6">
                     <div className="card bg-dark text-white">
                         <div className="card-body d-flex justify-content-center">
-                            <div className="chart-container" style={{ position: 'relative', height: '100%', width: '100%', maxWidth: '400px' }}>
+                            <div 
+                                ref={chartContainerRef}
+                                className="chart-container" 
+                                style={{ 
+                                    position: 'relative', 
+                                    height: '300px',
+                                    width: '100%', 
+                                    maxWidth: '400px' 
+                                }}
+                            >
                                 <canvas id="statusChart"></canvas>
                             </div>
                         </div>
@@ -118,10 +145,15 @@ export default function User() {
                 let valueA = a[filters.sortBy];
                 let valueB = b[filters.sortBy];
                 
+                // Handle null or undefined values
+                if (valueA === null || valueA === undefined) valueA = '';
+                if (valueB === null || valueB === undefined) valueB = '';
+                
                 // Handle string comparison vs. numeric comparison
-                if (typeof valueA === 'string') {
-                    valueA = valueA.toLowerCase();
-                    valueB = valueB.toLowerCase();
+                if (typeof valueA === 'string' || typeof valueB === 'string') {
+                    // Convert both to strings to ensure safe comparison
+                    valueA = String(valueA).toLowerCase();
+                    valueB = String(valueB).toLowerCase();
                     return filters.order === 'asc' 
                         ? valueA.localeCompare(valueB) 
                         : valueB.localeCompare(valueA);
@@ -188,115 +220,127 @@ export default function User() {
 
     return (
         <div className="d-flex flex-column">
-            <div className="d-flex align-items-center gap-3 p-3 mt-4">
-                <div className="position-relative flex-grow-1">
+            {/* Top controls - fully responsive */}
+            <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2 gap-md-3 p-2 p-md-3 mt-2 mt-md-4">
+                <div className="position-relative flex-grow-1 w-100">
                     <i className="fa-solid fa-magnifying-glass position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"></i>
                     <input
                         type="search"
                         className="form-control bg-dark text-white ps-5 border-0 custom-placeholder"
-                        placeholder="Search by first name (type to search)"
+                        placeholder="Search by first name"
                         style={{ height: '45px' }}
                         value={searchTerm}
                         onChange={handleSearch}
                     />
                 </div>
-                <div className="dropdown">
-                    <button
-                        className="btn btn-outline-light d-flex align-items-center gap-2"
-                        type="button"
-                        data-bs-toggle="dropdown"
-                        aria-expanded="false"
-                    >
-                        <i className="fa-solid fa-sliders"></i>
-                        Filters
-                    </button>
-                    <ul className="dropdown-menu dropdown-menu-dark">
-                        <li><button className="dropdown-item" onClick={() => setFilters(prev => ({ ...prev, isActive: '', status: '' }))}>All Users</button></li>
-                        <li><button className="dropdown-item" onClick={() => setFilters(prev => ({ ...prev, isActive: 'true' }))}>Active Users</button></li>
-                        <li><button className="dropdown-item" onClick={() => setFilters(prev => ({ ...prev, isActive: 'false' }))}>Inactive Users</button></li>
-                        <li><button className="dropdown-item" onClick={() => setFilters(prev => ({ ...prev, status: 'verified' }))}>Verified Users</button></li>
-                        <li><button className="dropdown-item" onClick={() => setFilters(prev => ({ ...prev, status: 'pending' }))}>Pending Users</button></li>
-                        <li><button className="dropdown-item" onClick={() => setFilters(prev => ({ ...prev, status: 'blocked' }))}>Blocked Users</button></li>
-                    </ul>
+                <div className="d-flex gap-2 mt-2 mt-md-0 w-100 w-md-auto">
+                    <div className="dropdown">
+                        <button
+                            className="btn btn-outline-light d-flex align-items-center gap-2 w-100"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                        >
+                            <i className="fa-solid fa-sliders"></i>
+                            <span className="d-none d-sm-inline">Filters</span>
+                        </button>
+                        <ul className="dropdown-menu dropdown-menu-dark">
+                            <li><button className="dropdown-item" onClick={() => setFilters(prev => ({ ...prev, isActive: '', status: '' }))}>All Users</button></li>
+                            <li><button className="dropdown-item" onClick={() => setFilters(prev => ({ ...prev, isActive: 'true' }))}>Active Users</button></li>
+                            <li><button className="dropdown-item" onClick={() => setFilters(prev => ({ ...prev, isActive: 'false' }))}>Inactive Users</button></li>
+                            <li><button className="dropdown-item" onClick={() => setFilters(prev => ({ ...prev, status: 'verified' }))}>Verified Users</button></li>
+                            <li><button className="dropdown-item" onClick={() => setFilters(prev => ({ ...prev, status: 'pending' }))}>Pending Users</button></li>
+                            <li><button className="dropdown-item" onClick={() => setFilters(prev => ({ ...prev, status: 'blocked' }))}>Blocked Users</button></li>
+                        </ul>
+                    </div>
+                    <Link to="/add-user" className="btn btn-primary d-flex align-items-center gap-2">
+                        <i className="fa-solid fa-plus"></i>
+                        <span className="d-none d-sm-inline">Add User</span>
+                    </Link>
                 </div>
-                <Link to="/add-user" className="btn btn-primary d-flex align-items-center gap-2">
-                    <i className="fa-solid fa-plus"></i> Add User
-                </Link>
             </div>
 
             {loading ? (
                 <Loader />
             ) : (
-                <div className="container-fluid px-3">
-                    <table className="table table-dark table-hover">
-                        <thead>
-                            <tr>
-                                <th>Details</th>
-                                <th onClick={() => handleSort('id')} style={{ cursor: 'pointer' }}>
-                                    ID <i className={`fas fa-sort${filters.sortBy === 'id' ? (filters.order === 'asc' ? '-up' : '-down') : ''} text-muted ms-1`}></i>
-                                </th>
-                                <th onClick={() => handleSort('firstName')} style={{ cursor: 'pointer' }}>
-                                    Name <i className={`fas fa-sort${filters.sortBy === 'firstName' ? (filters.order === 'asc' ? '-up' : '-down') : ''} text-muted ms-1`}></i>
-                                </th>
-                                <th onClick={() => handleSort('phone')} style={{ cursor: 'pointer' }}>
-                                    Phone Number <i className={`fas fa-sort${filters.sortBy === 'phone' ? (filters.order === 'asc' ? '-up' : '-down') : ''} text-muted ms-1`}></i>
-                                </th>
-                                <th>Role</th>
-                                <th onClick={() => handleSort('isActive')} style={{ cursor: 'pointer' }}>
-                                    Is Active <i className={`fas fa-sort${filters.sortBy === 'isActive' ? (filters.order === 'asc' ? '-up' : '-down') : ''} text-muted ms-1`}></i>
-                                </th>
-                                <th onClick={() => handleSort('status')} style={{ cursor: 'pointer' }}>
-                                    Status <i className={`fas fa-sort${filters.sortBy === 'status' ? (filters.order === 'asc' ? '-up' : '-down') : ''} text-muted ms-1`}></i>
-                                </th>
-                                <th>Delete</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {paginatedUsers.length > 0 ? (
-                                paginatedUsers.map((user) => (
-                                    <tr key={user.id}>
-                                        <td>
-                                            <Link to={`/specific-user/${user.id}`}>
-                                                <button className="btn btn-outline-light py-0">details</button>
-                                            </Link>
-                                        </td>
-                                        <td>{user.id}</td>
-                                        <td>{user.firstName}</td>
-                                        <td>{user.phone ? user.phone : 'N/A'}</td>
-                                        <td>{user.role}</td>
-                                        <td>{user.isActive ? 'yes' : 'no'}</td>
-                                        <td>
-                                            <span className={`badge ${user.status === 'verified' ? 'bg-success' : user.status === 'pending' ? 'bg-warning' : 'bg-danger'}`}>
-                                                {user.status}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div className="d-flex justify-content-center gap-2">
-                                                <button onClick={() => deleteUser(user.id)} className="bg-transparent border-0 p-1">
-                                                    <i className="fas fa-trash text-danger"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
+                <div className="container-fluid px-2 px-md-3">
+                    {/* Responsive table with horizontal scrolling on small screens */}
+                    <div className="table-responsive">
+                        <table className="table table-dark table-hover">
+                            <thead>
                                 <tr>
-                                    <td colSpan="8" className="text-center">No users found</td>
+                                    <th>Details</th>
+                                    <th onClick={() => handleSort('id')} style={{ cursor: 'pointer' }}>
+                                        ID <i className={`fas fa-sort${filters.sortBy === 'id' ? (filters.order === 'asc' ? '-up' : '-down') : ''} text-muted ms-1`}></i>
+                                    </th>
+                                    <th onClick={() => handleSort('firstName')} style={{ cursor: 'pointer' }}>
+                                        Name <i className={`fas fa-sort${filters.sortBy === 'firstName' ? (filters.order === 'asc' ? '-up' : '-down') : ''} text-muted ms-1`}></i>
+                                    </th>
+                                    <th onClick={() => handleSort('phone')} style={{ cursor: 'pointer' }}>
+                                        Phone <i className={`fas fa-sort${filters.sortBy === 'phone' ? (filters.order === 'asc' ? '-up' : '-down') : ''} text-muted ms-1`}></i>
+                                    </th>
+                                    <th className="d-none d-md-table-cell">Role</th>
+                                    <th onClick={() => handleSort('isActive')} style={{ cursor: 'pointer' }} className="d-none d-lg-table-cell">
+                                        Active <i className={`fas fa-sort${filters.sortBy === 'isActive' ? (filters.order === 'asc' ? '-up' : '-down') : ''} text-muted ms-1`}></i>
+                                    </th>
+                                    <th onClick={() => handleSort('status')} style={{ cursor: 'pointer' }}>
+                                        Status <i className={`fas fa-sort${filters.sortBy === 'status' ? (filters.order === 'asc' ? '-up' : '-down') : ''} text-muted ms-1`}></i>
+                                    </th>
+                                    <th>Delete</th>
                                 </tr>
-                            )}
-                        </tbody>
-                        <tfoot>
-                            <tr>
-                                <td colSpan="8">
-                                    <div className="d-flex my-2 justify-content-between align-items-center">
-                                        <button className="btn btn-secondary" onClick={handlePrevPage} disabled={currentPage === 1}>Previous</button>
-                                        <span className="text-white">Page {currentPage} of {totalPages || 1}</span>
-                                        <button className="btn btn-secondary" onClick={handleNextPage} disabled={currentPage === totalPages || totalPages === 0}>Next</button>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tfoot>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {paginatedUsers.length > 0 ? (
+                                    paginatedUsers.map((user) => (
+                                        <tr key={user.id}>
+                                            <td>
+                                                <Link to={`/specific-user/${user.id}`}>
+                                                    <button className="btn btn-outline-light btn-sm py-0">
+                                                        <i className="fas fa-info-circle d-inline d-sm-none"></i>
+                                                        <span className="d-none d-sm-inline">details</span>
+                                                    </button>
+                                                </Link>
+                                            </td>
+                                            <td>{user.id}</td>
+                                            <td>{user.firstName}</td>
+                                            <td>{user.phone ? user.phone : 'N/A'}</td>
+                                            <td className="d-none d-md-table-cell">{user.role}</td>
+                                            <td className="d-none d-lg-table-cell">{user.isActive ? 'yes' : 'no'}</td>
+                                            <td>
+                                                <span className={`badge ${user.status === 'verified' ? 'bg-success' : user.status === 'pending' ? 'bg-warning' : 'bg-danger'}`}>
+                                                    {user.status}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div className="d-flex justify-content-center">
+                                                    <button onClick={() => deleteUser(user.id)} className="bg-transparent border-0 p-1">
+                                                        <i className="fas fa-trash text-danger"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="8" className="text-center">No users found</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Pagination controls - optimized for mobile */}
+                    <div className="d-flex my-2 justify-content-between align-items-center flex-wrap px-2">
+                        <button className="btn btn-secondary btn-sm" onClick={handlePrevPage} disabled={currentPage === 1}>
+                            <i className="fas fa-chevron-left me-1 d-inline d-sm-none"></i>
+                            <span className="d-none d-sm-inline">Previous</span>
+                        </button>
+                        <span className="text-white my-2">Page {currentPage} of {totalPages || 1}</span>
+                        <button className="btn btn-secondary btn-sm" onClick={handleNextPage} disabled={currentPage === totalPages || totalPages === 0}>
+                            <span className="d-none d-sm-inline">Next</span>
+                            <i className="fas fa-chevron-right ms-1 d-inline d-sm-none"></i>
+                        </button>
+                    </div>
 
                     <UserAnalytics users={allUsersData} />
                 </div>

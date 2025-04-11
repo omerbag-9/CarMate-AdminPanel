@@ -160,3 +160,113 @@
   }
 }
 /* ------ */
+/* Enhanced table responsiveness with better scrolling */
+
+/* Table wrapper to manage fixed headers if needed */
+.table-responsive-wrapper {
+  position: relative;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+/* Enhance the default table-responsive class */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+/* Custom scrollbar styling */
+.table-custom-scrollbar::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.table-custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+.table-custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Ensure table content doesn't break on small screens */
+.table th, .table td {
+  white-space: nowrap;
+  padding: 0.5rem 0.75rem;
+}
+
+/* Define minimum widths for columns */
+.table th {
+  min-width: 60px;
+}
+
+/* For fixed columns like action buttons */
+.th-fixed, .td-fixed {
+  position: sticky;
+  background-color: #212529;
+  z-index: 1;
+}
+
+/* Left fixed column */
+.th-fixed:first-child, .td-fixed:first-child {
+  left: 0;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Right fixed column */
+.th-fixed:last-child, .td-fixed:last-child {
+  right: 0;
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive text adjustments */
+@media (max-width: 575.98px) {
+  .table {
+    font-size: 0.8rem;
+  }
+  
+  .btn-sm {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.75rem;
+  }
+  
+  .badge {
+    font-size: 0.7rem;
+    padding: 0.2em 0.4em;
+  }
+}
+
+/* Ensure the scroll indicator is visible */
+.text-muted i.fa-arrows-left-right {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { opacity: 0.5; }
+}
+
+/* Chart responsiveness */
+.chart-container {
+  min-height: 250px;
+}
+
+/* Mobile-friendly pagination */
+@media (max-width: 767.98px) {
+  .pagination-controls {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+
+/* Hover effect on table rows */
+.table-hover tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.075);
+}

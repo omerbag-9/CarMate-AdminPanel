@@ -1,8 +1,8 @@
 import React, { useContext, useEffect, useState } from 'react';
-import pp from '../../assets/pp.png';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { UserContext } from '../../Context/UserContext';
 import Cookies from 'js-cookie';
+import person from '../../assets/default-avatar.png';
 
 const navItems = [
     { path: '/users', icon: 'fa-solid fa-user', text: 'Users', roles: ['admin'] },
@@ -13,7 +13,7 @@ const navItems = [
     { path: '/myProducts', icon: 'fa-solid fa-chart-line', text: 'Product', roles: ['seller'] },
 ];
 
-export default function SideNav({ onClose }) {
+export default function SideNav({ onClose, isOpen }) {
     const { getProfile } = useContext(UserContext);
     const [profile, setProfile] = useState({});
     const [loading, setLoading] = useState(false);
@@ -41,59 +41,87 @@ export default function SideNav({ onClose }) {
         navigate('/login');
     };
 
+    // Dynamic class for showing/hiding the sidebar on mobile
+    const sidebarClass = `position-fixed start-0 side-nav vh-100 bg-dark d-flex flex-column ${isOpen ? 'show-sidebar' : 'hide-sidebar'}`;
+
     return (
-        <div className='position-fixed start-0 side-nav vh-100 bg-dark d-flex flex-column' style={{ width: '200px' }}>
-            <div className="row d-flex align-items-center mt-3 mx-1">
-                <div className="col-4">
-                    <img src={profile.profilePhoto} className='w-100 rounded-circle' alt="Profile" />
-                </div>
-                <div className="col-8">
-                    {loading ? (
-                        <div className="h6 text-white mb-0">UserName</div>
-                    ) : (
-                        <h6 className='text-white m-0 text-break'>
-                            {profile.firstName?.trim() + ' ' + profile.lastName?.trim()}
-                        </h6>
-                    )}
-                    <small className='text-white m-0'>{role}</small>
-                </div>
-                {/* Close button for mobile */}
-                <button
-                    className="btn-close btn-close-white position-absolute top-0 end-0 m-2 d-lg-none"
+        <>
+            {/* Overlay for mobile when sidebar is open */}
+            {isOpen && (
+                <div
+                    className="position-fixed top-0 start-0 w-100 h-100 bg-dark d-lg-none"
+                    style={{ opacity: 0.5, zIndex: 999 }}
                     onClick={onClose}
-                    aria-label="Close"
-                ></button>
+                ></div>
+            )}
+
+            <div className={sidebarClass} style={{ width: '250px', zIndex: 1000, transition: 'transform 0.3s ease' }}>
+                <div className="row d-flex align-items-center mt-3 mx-1 position-relative">
+                    <div className="col-4">
+                        <div
+                            className="rounded-circle overflow-hidden "
+                            style={{ width: '80px', height: '80px' }}
+                        >
+                            <img
+                                src={profile.profilePhoto || person}
+                                alt="Profile"
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover'
+                                }}
+                            />
+                        </div>
+
+                    </div>
+                    <div className="col-8">
+                        {loading ? (
+                            <div className="h6 text-white mb-0">UserName</div>
+                        ) : (
+                            <h6 className='text-white m-0 text-break'>
+                                {profile.firstName?.trim() + ' ' + profile.lastName?.trim()}
+                            </h6>
+                        )}
+                        <small className='text-white m-0'>{role}</small>
+                    </div>
+
+                    {/* Close button for mobile */}
+                    <button
+                        className="btn-close btn-close-white position-absolute top-0 end-0 m-2 d-lg-none"
+                        onClick={onClose}
+                        aria-label="Close"
+                    ></button>
+                </div>
+
+                <ul className="nav flex-column mt-3 w-100">
+                    {navItems
+                        .filter(({ roles }) => roles.includes(role))
+                        .map(({ path, icon, text }) => (
+                            <li key={path} className="nav-item w-100">
+                                <NavLink
+                                    to={path}
+                                    className={({ isActive }) =>
+                                        `nav-link text-light d-flex align-items-center py-2 px-3 rounded position-relative w-100 ${isActive ? 'active-link active-line' : ''
+                                        }`
+                                    }
+                                    onClick={() => onClose?.()}
+                                >
+                                    <i className={`${icon} me-2`}></i>
+                                    <span>{text}</span>
+                                </NavLink>
+                            </li>
+                        ))}
+                </ul>
+
+                {/* Logout button */}
+                <button
+                    onClick={handleLogout}
+                    className="btn btn-danger mt-auto mb-3 mx-3 d-flex align-items-center justify-content-center"
+                >
+                    <i className="fa-solid fa-sign-out-alt me-2"></i>
+                    <span>Logout</span>
+                </button>
             </div>
-
-            <ul className="nav flex-column mt-3">
-                {navItems
-                    .filter(({ roles }) => roles.includes(role))
-                    .map(({ path, icon, text }) => (
-                        <li key={path} className="nav-item">
-                            <NavLink
-                                to={path}
-                                className={({ isActive }) =>
-                                    `nav-link text-light d-flex align-items-center py-2 px-2 rounded position-relative ${
-                                        isActive ? 'active-link active-line' : ''
-                                    }`
-                                }
-                                onClick={() => onClose?.()}
-                            >
-                                <i className={`${icon} me-2`}></i>
-                                <small>{text}</small>
-                            </NavLink>
-                        </li>
-                    ))}
-            </ul>
-
-            {/* Logout button */}
-            <button
-                onClick={handleLogout}
-                className="btn btn-danger mt-auto mb-3 mx-3 d-flex align-items-center justify-content-center"
-            >
-                <i className="fa-solid fa-sign-out-alt me-2"></i>
-                <small>Logout</small>
-            </button>
-        </div>
+        </>
     );
 }
