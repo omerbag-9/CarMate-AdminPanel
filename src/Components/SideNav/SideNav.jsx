@@ -33,20 +33,17 @@ export default function SideNav({ onClose, isOpen }) {
     const role = Cookies.get('role') || profile.role;
 
     const handleLogout = () => {
-        // Clear all cookies
         Object.keys(Cookies.get()).forEach(cookieName => {
             Cookies.remove(cookieName);
         });
-        // Navigate to login page
         navigate('/login');
     };
 
-    // Dynamic class for showing/hiding the sidebar on mobile
     const sidebarClass = `position-fixed start-0 side-nav vh-100 bg-dark d-flex flex-column ${isOpen ? 'show-sidebar' : 'hide-sidebar'}`;
 
     return (
         <>
-            {/* Overlay for mobile when sidebar is open */}
+            {/* Overlay for mobile */}
             {isOpen && (
                 <div
                     className="position-fixed top-0 start-0 w-100 h-100 bg-dark d-lg-none"
@@ -56,10 +53,21 @@ export default function SideNav({ onClose, isOpen }) {
             )}
 
             <div className={sidebarClass} style={{ width: '250px', zIndex: 1000, transition: 'transform 0.3s ease' }}>
+                {/* Logout button for mobile (top) */}
+                <div className="d-lg-none px-3 pt-3">
+                    <button
+                        onClick={handleLogout}
+                        className="btn btn-danger w-100 d-flex align-items-center justify-content-center"
+                    >
+                        <i className="fa-solid fa-sign-out-alt me-2"></i>
+                        <span>Logout</span>
+                    </button>
+                </div>
+
                 <div className="row d-flex align-items-center mt-3 mx-1 position-relative">
                     <div className="col-4">
                         <div
-                            className="rounded-circle overflow-hidden "
+                            className="rounded-circle overflow-hidden"
                             style={{ width: '80px', height: '80px' }}
                         >
                             <img
@@ -72,7 +80,6 @@ export default function SideNav({ onClose, isOpen }) {
                                 }}
                             />
                         </div>
-
                     </div>
                     <div className="col-8">
                         {loading ? (
@@ -113,14 +120,16 @@ export default function SideNav({ onClose, isOpen }) {
                         ))}
                 </ul>
 
-                {/* Logout button */}
-                <button
-                    onClick={handleLogout}
-                    className="btn btn-danger mt-auto mb-3 mx-3 d-flex align-items-center justify-content-center"
-                >
-                    <i className="fa-solid fa-sign-out-alt me-2"></i>
-                    <span>Logout</span>
-                </button>
+                {/* Logout button for desktop (bottom) */}
+                <div className="d-none d-lg-block mt-auto mb-3 px-3">
+                    <button
+                        onClick={handleLogout}
+                        className="btn btn-danger w-100 d-flex align-items-center justify-content-center"
+                    >
+                        <i className="fa-solid fa-sign-out-alt me-2"></i>
+                        <span>Logout</span>
+                    </button>
+                </div>
             </div>
         </>
     );
