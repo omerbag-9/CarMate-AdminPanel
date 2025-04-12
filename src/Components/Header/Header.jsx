@@ -10,7 +10,7 @@ export default function Header() {
         async function getUserProfile() {
             setLoading(true);
             let data = await getProfile();
-            setProfile(data.data);
+            setProfile(data?.data?.user);
             setLoading(false);
         }
     
