@@ -37,8 +37,7 @@ export default function AddProduct() {
   const validationSchema = Yup.object({
     title: Yup.string().required('Title is required'),
     slug: Yup.string()
-      .required('Slug is required')
-      .matches(/^[a-z0-9-]+$/, 'Slug can only contain lowercase letters, numbers, and hyphens'),
+      .required('Slug is required'),
     productLink: Yup.string().url('Enter a valid URL'),
     price: Yup.number()
       .required('Price is required')
