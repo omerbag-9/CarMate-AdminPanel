@@ -22,7 +22,7 @@ export default function SideNav({ onClose, isOpen }) {
     async function getUserProfile() {
         setLoading(true);
         let data = await getProfile();
-        setProfile(data.data);
+        setProfile(data?.data?.user);
         setLoading(false);
     }
 

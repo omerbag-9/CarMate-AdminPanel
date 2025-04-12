@@ -16,7 +16,7 @@ export default function Product() {
         order: 'asc'
     });
 
-    const ITEMS_PER_PAGE = 5;
+    const ITEMS_PER_PAGE = 10;
 
     // Fetch all products at once
     async function fetchAllProducts() {

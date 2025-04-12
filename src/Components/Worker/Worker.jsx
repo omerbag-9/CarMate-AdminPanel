@@ -18,7 +18,7 @@ export default function Worker() {
         status: ''
     });
 
-    const ITEMS_PER_PAGE = 5;
+    const ITEMS_PER_PAGE = 10;
 
     // Fetch all workers at once
     async function fetchAllWorkers() {

@@ -81,7 +81,7 @@ export default function Seller() {
         status: ''
     });
 
-    const ITEMS_PER_PAGE = 5;
+    const ITEMS_PER_PAGE = 10;
 
     // Fetch all sellers at once
     async function fetchAllSellers() {

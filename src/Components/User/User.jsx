@@ -108,7 +108,7 @@ export default function User() {
         status: ''
     });
     
-    const ITEMS_PER_PAGE = 5;
+    const ITEMS_PER_PAGE = 10;
 
     // Fetch all users at once
     async function fetchAllUsers() {
