@@ -15,6 +15,7 @@ export default function Product() {
         sortBy: '',
         order: 'asc'
     });
+    const [deleteLoading, setDeleteLoading] = useState(null); // Track which product is being deleted
 
     const ITEMS_PER_PAGE = 10;
 
@@ -85,6 +86,7 @@ export default function Product() {
     }, []);
 
     async function deleteProduct(id) {
+        setDeleteLoading(id); // Set the ID of the product being deleted
         try {
             await axios.delete(`https://fb-m90x.onrender.com/admin/deleteproduct/${id}`, {
                 headers: { token: Cookies.get('token') }
@@ -92,8 +94,19 @@ export default function Product() {
             fetchAllProducts();
         } catch (err) {
             console.error('Error deleting product:', err);
+            // Optionally show an error notification here
+        } finally {
+            setDeleteLoading(null); // Reset loading state regardless of outcome
         }
     }
+
+    // Confirmation before deleting
+    const confirmDelete = (id, title) => {
+        // Using the browser's built-in confirm dialog
+        if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
+            deleteProduct(id);
+        }
+    };
 
     const handleSearch = (e) => {
         setSearchTerm(e.target.value);
@@ -180,6 +193,7 @@ export default function Product() {
                                     <th className="d-none d-lg-table-cell">Category</th>
                                     <th className="d-none d-md-table-cell">Created</th>
                                     <th>Link</th>
+                                    <th>Actions</th> {/* New column for delete action */}
                                 </tr>
                             </thead>
                             <tbody>
@@ -210,10 +224,23 @@ export default function Product() {
                                                     </Link>
                                                 </div>
                                             </td>
+                                            <td>
+                                                <button
+                                                    className="btn btn-danger btn-sm"
+                                                    onClick={() => confirmDelete(product.id, product.title)}
+                                                    disabled={deleteLoading === product.id}
+                                                >
+                                                    {deleteLoading === product.id ? (
+                                                        <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                    ) : (
+                                                        <i className="fas fa-trash-alt"></i>
+                                                    )}
+                                                </button>
+                                            </td>
                                         </tr>
                                     ))
                                 ) : (
-                                    <tr><td colSpan="7" className="text-center">No products found</td></tr>
+                                    <tr><td colSpan="8" className="text-center">No products found</td></tr>
                                 )}
                             </tbody>
                         </table>
