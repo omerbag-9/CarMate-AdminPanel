@@ -12,8 +12,12 @@ import Loader from '../Loader/Loader';
 const validationSchema = Yup.object({
     title: Yup.string().required('Title is required'),
     price: Yup.string().required('Price is required'),
-    productLink: Yup.string().url('Must be a valid URL').required('Product link is required'),
+    productLink: Yup.string().url('Must be a valid URL'),
     description: Yup.string().required('Description is required'),
+    // Arabic fields are optional
+    arabicTitle: Yup.string().required('Arabic title is required'),
+    arabicDescription: Yup.string().required('Arabic description is required'),
+    subCategoryId: Yup.string().required('Subcategory is required'),
 });
 
 export default function GetSpecificProduct() {
@@ -21,12 +25,15 @@ export default function GetSpecificProduct() {
     const { id } = useParams(); // Get product ID from URL
     const [initialValues, setInitialValues] = useState({
         title: '',
+        arabicTitle: '',
         slug: '',
         productLink: '',
         price: '',
         description: '',
+        arabicDescription: '',
         mainImage: '',
         subImages: [],
+        subCategoryId: ''
     });
     const [seller, setSeller] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -34,6 +41,8 @@ export default function GetSpecificProduct() {
     const [subImageFiles, setSubImageFiles] = useState([]);
     const [previewMainImage, setPreviewMainImage] = useState('');
     const [previewSubImages, setPreviewSubImages] = useState([]);
+    const [subCategories, setSubCategories] = useState([]);
+    const [subCategoriesLoading, setSubCategoriesLoading] = useState(false);
 
     // Fetch product data when component mounts
     useEffect(() => {
@@ -50,18 +59,25 @@ export default function GetSpecificProduct() {
                 
                 const productValues = {
                     title: data.product.title || '',
+                    arabicTitle: data.product.arabicTitle || '',
                     slug: data.product.slug || '',
                     productLink: data.product.productLink || '',
                     price: data.product.price || '',
                     description: data.product.description || '',
+                    arabicDescription: data.product.arabicDescription || '',
                     mainImage: data.product.mainImage || '',
                     subImages: data.product.subImages || [],
+                    subCategoryId: data.product.subCategoryId || ''
                 };
                 
                 setInitialValues(productValues);
                 setPreviewMainImage(data.product.mainImage || '');
                 setPreviewSubImages(data.product.subImages || []);
                 setSeller(data.seller);
+                
+                // Fetch subcategories
+                fetchSubCategories();
+                
                 setLoading(false);
             } catch (error) {
                 console.error('Error fetching product:', error.response?.data || error);
@@ -69,8 +85,29 @@ export default function GetSpecificProduct() {
                 setLoading(false);
             }
         };
+        
+        // Fetch subcategories and product data
         fetchProduct();
     }, [id]);
+
+    // Fetch subcategories
+    const fetchSubCategories = async () => {
+        setSubCategoriesLoading(true);
+        try {
+            const response = await axios.get('https://fb-m90x.onrender.com/seller/getSubCategories/1');
+            if (response.data.status === 'success' && Array.isArray(response.data.data.subCategories)) {
+                setSubCategories(response.data.data.subCategories);
+            } else {
+                setSubCategories([]);
+            }
+        } catch (error) {
+            console.error('Error fetching subcategories:', error);
+            toast.error('Failed to load subcategories');
+            setSubCategories([]);
+        } finally {
+            setSubCategoriesLoading(false);
+        }
+    };
 
     // Handle main image file change
     const handleMainImageChange = (event) => {
@@ -99,6 +136,19 @@ export default function GetSpecificProduct() {
             formData.append('productLink', values.productLink);
             formData.append('price', values.price);
             formData.append('description', values.description);
+            
+            // Append Arabic fields
+            if (values.arabicTitle) {
+                formData.append('arabicTitle', values.arabicTitle);
+            }
+            if (values.arabicDescription) {
+                formData.append('arabicDescription', values.arabicDescription);
+            }
+            
+            // Append subcategory
+            if (values.subCategoryId) {
+                formData.append('subCategoryId', values.subCategoryId);
+            }
             
             // Append main image if changed
             if (mainImageFile) {
@@ -150,12 +200,15 @@ export default function GetSpecificProduct() {
             const updatedData = updatedResponse.data.data;
             const updatedProductValues = {
                 title: updatedData.product.title || '',
+                arabicTitle: updatedData.product.arabicTitle || '',
                 slug: updatedData.product.slug || '',
                 productLink: updatedData.product.productLink || '',
                 price: updatedData.product.price || '',
                 description: updatedData.product.description || '',
+                arabicDescription: updatedData.product.arabicDescription || '',
                 mainImage: updatedData.product.mainImage || '',
                 subImages: updatedData.product.subImages || [],
+                subCategoryId: updatedData.product.subCategoryId || ''
             };
             
             setInitialValues(updatedProductValues);
@@ -193,7 +246,7 @@ export default function GetSpecificProduct() {
                 validationSchema={validationSchema}
                 onSubmit={handleSubmit}
             >
-                {({ isSubmitting, status }) => (
+                {({ isSubmitting, status, setFieldValue, values }) => (
                     <Form className="bg-dark text-white p-4 rounded">
                         <h2 className="text-center mb-5 mt-3">Product Details</h2>
 
@@ -300,10 +353,36 @@ export default function GetSpecificProduct() {
                         </div>
 
                         <div className="row g-4">
-                            {/* First row - 3 inputs */}
-                            <div className="col-md-4">
+                            {/* Subcategory Field (replaces the Category and Subcategory fields) */}
+                            <div className="col-md-6">
+                                <label htmlFor="subCategoryId" className="form-label">
+                                    <i className="fas fa-tag me-2"></i>Subcategory
+                                </label>
+                                <select
+                                    className="form-control"
+                                    id="subCategoryId"
+                                    name="subCategoryId"
+                                    value={values.subCategoryId}
+                                    onChange={(e) => setFieldValue('subCategoryId', e.target.value)}
+                                    disabled={subCategoriesLoading}
+                                >
+                                    <option value="">Select Subcategory</option>
+                                    {subCategories.map(subCategory => (
+                                        <option key={subCategory.id} value={subCategory.id}>
+                                            {subCategory.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                {subCategoriesLoading && <div className="spinner-border spinner-border-sm text-light ms-2"></div>}
+                                {subCategories.length === 0 && !subCategoriesLoading && 
+                                    <small className="form-text text-muted">No subcategories available</small>
+                                }
+                            </div>
+
+                            {/* Title fields */}
+                            <div className="col-md-6">
                                 <label htmlFor="title" className="form-label">
-                                    <i className="fas fa-tag me-2"></i>Title
+                                    <i className="fas fa-heading me-2"></i>Title (English)
                                 </label>
                                 <Field
                                     type="text"
@@ -313,19 +392,21 @@ export default function GetSpecificProduct() {
                                 />
                                 <ErrorMessage name="title" component="div" className="text-danger mt-1" />
                             </div>
+                            
                             <div className="col-md-4">
-                                <label htmlFor="slug" className="form-label">
-                                    <i className="fas fa-link me-2"></i>Slug
+                                <label htmlFor="arabicTitle" className="form-label">
+                                    <i className="fas fa-heading me-2"></i>Title (Arabic)
                                 </label>
                                 <Field
                                     type="text"
                                     className="form-control"
-                                    id="slug"
-                                    name="slug"
-                                    disabled={true} // Slug is typically auto-generated
+                                    id="arabicTitle"
+                                    name="arabicTitle"
+                                    dir="rtl"
                                 />
-                                <small className="form-text text-muted">Slug cannot be changed directly</small>
+                                <ErrorMessage name="arabicTitle" component="div" className="text-danger mt-1" />
                             </div>
+                            
                             <div className="col-md-4">
                                 <label htmlFor="price" className="form-label">
                                     <i className="fas fa-money-bill me-2"></i>Price
@@ -339,8 +420,22 @@ export default function GetSpecificProduct() {
                                 <ErrorMessage name="price" component="div" className="text-danger mt-1" />
                             </div>
 
-                            {/* Second row - Product Link */}
-                            <div className="col-md-12">
+                            {/* Slug and Product Link */}
+                            <div className="col-md-4">
+                                <label htmlFor="slug" className="form-label">
+                                    <i className="fas fa-link me-2"></i>Slug
+                                </label>
+                                <Field
+                                    type="text"
+                                    className="form-control"
+                                    id="slug"
+                                    name="slug"
+                                    disabled={true} // Slug is typically auto-generated
+                                />
+                                <small className="form-text text-muted">Slug cannot be changed directly</small>
+                            </div>
+                            
+                            <div className="col-md-8">
                                 <label htmlFor="productLink" className="form-label">
                                     <i className="fas fa-external-link-alt me-2"></i>Product Link
                                 </label>
@@ -353,10 +448,10 @@ export default function GetSpecificProduct() {
                                 <ErrorMessage name="productLink" component="div" className="text-danger mt-1" />
                             </div>
 
-                            {/* Third row - Description */}
-                            <div className="col-md-12">
+                            {/* Descriptions */}
+                            <div className="col-md-6">
                                 <label htmlFor="description" className="form-label">
-                                    <i className="fas fa-file-alt me-2"></i>Description
+                                    <i className="fas fa-file-alt me-2"></i>Description (English)
                                 </label>
                                 <Field
                                     as="textarea"
@@ -366,6 +461,21 @@ export default function GetSpecificProduct() {
                                     rows="4"
                                 />
                                 <ErrorMessage name="description" component="div" className="text-danger mt-1" />
+                            </div>
+                            
+                            <div className="col-md-6">
+                                <label htmlFor="arabicDescription" className="form-label">
+                                    <i className="fas fa-file-alt me-2"></i>Description (Arabic)
+                                </label>
+                                <Field
+                                    as="textarea"
+                                    className="form-control"
+                                    id="arabicDescription"
+                                    name="arabicDescription"
+                                    rows="4"
+                                    dir="rtl"
+                                />
+                                <ErrorMessage name="arabicDescription" component="div" className="text-danger mt-1" />
                             </div>
                         </div>
 

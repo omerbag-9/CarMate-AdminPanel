@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import cookies from 'js-cookie';
 import Loader from '../Loader/Loader';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function MyProducts() {
   const [products, setProducts] = useState([]);
@@ -12,6 +14,7 @@ export default function MyProducts() {
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState(null);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [deletingProductId, setDeletingProductId] = useState(null);
 
   // Fetch products owned by the seller
   async function getOwnProducts() {
@@ -67,6 +70,36 @@ export default function MyProducts() {
     }
   }
 
+  // Handle delete product
+  const handleDeleteProduct = async (productId) => {
+    // Confirm before deleting
+    if (!window.confirm("Are you sure you want to delete this product? This action cannot be undone.")) {
+      return;
+    }
+    
+    setDeletingProductId(productId);
+    
+    try {
+      const response = await axios.delete(`https://fb-m90x.onrender.com/seller/deleteProduct/${productId}`, {
+        headers: { token: cookies.get('token') }
+      });
+      
+      if (response.data.status === 'success') {
+        toast.success('Product deleted successfully');
+        
+        // Remove the product from the state
+        setProducts(prevProducts => prevProducts.filter(product => product.id !== productId));
+      } else {
+        toast.error('Failed to delete product: ' + (response.data.message || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error('Error deleting product:', err);
+      toast.error(err.response?.data?.message || 'Failed to delete product. Please try again.');
+    } finally {
+      setDeletingProductId(null);
+    }
+  };
+
   useEffect(() => {
     getOwnProducts();
     getCategories();
@@ -120,6 +153,8 @@ export default function MyProducts() {
 
   return (
     <div className="container py-4">
+      <ToastContainer position="top-right" autoClose={3000} />
+      
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2 className="text-white m-0">My Products</h2>
         <div>
@@ -236,12 +271,25 @@ export default function MyProducts() {
                   <p className="card-text text-success fw-bold mt-2 mb-3">
                     ${formatPrice(product.price)}
                   </p>
-                  <Link 
-                    to={`/seller/getSpecificProduct/${product.id}`} 
-                    className="btn btn-outline-light mt-auto"
-                  >
-                    <i className="fas fa-eye me-1"></i> View Details
-                  </Link>
+                  <div className="d-flex mt-auto">
+                    <Link 
+                      to={`/seller/getSpecificProduct/${product.id}`} 
+                      className="btn btn-outline-light flex-grow-1 me-2"
+                    >
+                      <i className="fas fa-eye me-1"></i> View
+                    </Link>
+                    <button 
+                      className="btn btn-outline-danger"
+                      onClick={() => handleDeleteProduct(product.id)}
+                      disabled={deletingProductId === product.id}
+                    >
+                      {deletingProductId === product.id ? (
+                        <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                      ) : (
+                        <i className="fas fa-trash-alt"></i>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

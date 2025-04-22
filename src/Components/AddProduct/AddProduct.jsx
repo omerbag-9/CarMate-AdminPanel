@@ -7,54 +7,55 @@ import * as Yup from 'yup';
 
 export default function AddProduct() {
   const navigate = useNavigate();
-  const [categories, setCategories] = useState([]);
+  const [subCategories, setSubCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [mainImagePreview, setMainImagePreview] = useState('');
   const [subImagesPreview, setSubImagesPreview] = useState([]);
 
-  // Fetch categories
+  // Fetch subcategories
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchSubCategories = async () => {
       try {
-        const response = await axios.get('https://fb-m90x.onrender.com/seller/getcategories');
+        // Fetch subcategories directly without category selection
+        const response = await axios.get('https://fb-m90x.onrender.com/seller/getSubCategories/1');
         if (response.data && response.data.data) {
-          // Ensure categories is always an array
-          setCategories(Array.isArray(response.data.data.categories) ? response.data.data.categories : []);
-          
+          setSubCategories(Array.isArray(response.data.data.subCategories) ? response.data.data.subCategories : []);
         }
       } catch (err) {
-        console.error('Error fetching categories:', err);
-        setCategories([]); // Set to empty array on error
+        console.error('Error fetching subcategories:', err);
+        setSubCategories([]); // Set to empty array on error
       }
     };
 
-    fetchCategories();
+    fetchSubCategories();
   }, []);
 
   // Validation schema using Yup
   const validationSchema = Yup.object({
-    title: Yup.string().required('Title is required'),
-    slug: Yup.string()
-      .required('Slug is required'),
+    title: Yup.string().required('English title is required'),
+    arabicTitle: Yup.string().required('Arabic title is required'),
     productLink: Yup.string().url('Enter a valid URL'),
     price: Yup.number()
       .required('Price is required')
       .positive('Price must be positive')
       .typeError('Price must be a number'),
-    description: Yup.string().required('Description is required'),
-    categoryId: Yup.string().required('Category is required'),
+    description: Yup.string().required('English description is required'),
+    arabicDescription: Yup.string().required('Arabic description is required'),
+    subCategoryId: Yup.string().required('Subcategory is required'),
+    mainImage: Yup.mixed().required('Main image is required')
   });
 
   // Initial form values
   const initialValues = {
     title: '',
-    slug: '',
+    arabicTitle: '',
     productLink: '',
     price: '',
     description: '',
-    categoryId: categories.length > 0 ? categories[0].id : '',
+    arabicDescription: '',
+    subCategoryId: '',
     mainImage: null,
     subImages: []
   };
@@ -66,23 +67,19 @@ export default function AddProduct() {
     setSuccess('');
 
     try {
-      // Validate files
-      if (!values.mainImage) {
-        throw new Error('Main image is required');
-      }
-
       // Create FormData object for file upload
       const formData = new FormData();
       formData.append('title', values.title);
-      formData.append('slug', values.slug);
+      formData.append('arabicTitle', values.arabicTitle);
       formData.append('productLink', values.productLink);
       formData.append('price', values.price);
       formData.append('description', values.description);
-      formData.append('categoryId', values.categoryId);
+      formData.append('arabicDescription', values.arabicDescription);
+      formData.append('subCategoryId', values.subCategoryId);
       formData.append('mainImage', values.mainImage);
       
       // Append sub images if any
-      if (values.subImages) {
+      if (values.subImages && values.subImages.length > 0) {
         for (let i = 0; i < values.subImages.length; i++) {
           formData.append('subImages', values.subImages[i]);
         }
@@ -122,15 +119,6 @@ export default function AddProduct() {
       setLoading(false);
       setSubmitting(false);
     }
-  };
-
-  // Generate slug from title
-  const generateSlug = (title, setFieldValue) => {
-    const slugText = title
-      .toLowerCase()
-      .replace(/[^\w ]+/g, '')
-      .replace(/ +/g, '-');
-    setFieldValue('slug', slugText);
   };
 
   // Handle main image selection with preview
@@ -201,40 +189,34 @@ export default function AddProduct() {
             {({ isSubmitting, values, setFieldValue, errors, touched }) => (
               <Form>
                 <div className="row g-3">
-                  {/* Title */}
+                  {/* English Title */}
                   <div className="col-md-6">
                     <div className="form-group mb-3">
-                      <label htmlFor="title" className="form-label">Product Title *</label>
+                      <label htmlFor="title" className="form-label">English Title *</label>
                       <Field
                         type="text"
                         className={`form-control bg-dark text-white border-secondary ${touched.title && errors.title ? 'is-invalid' : ''}`}
                         id="title"
                         name="title"
-                        placeholder="Enter product title"
-                        onBlur={(e) => {
-                          // Generate slug when title field loses focus
-                          if (e.target.value && (!values.slug || values.slug === '')) {
-                            generateSlug(e.target.value, setFieldValue);
-                          }
-                        }}
+                        placeholder="Enter product title in English"
                       />
                       <ErrorMessage name="title" component="div" className="invalid-feedback" />
                     </div>
                   </div>
                   
-                  {/* Slug */}
+                  {/* Arabic Title */}
                   <div className="col-md-6">
                     <div className="form-group mb-3">
-                      <label htmlFor="slug" className="form-label">Product Slug *</label>
+                      <label htmlFor="arabicTitle" className="form-label">Arabic Title *</label>
                       <Field
                         type="text"
-                        className={`form-control bg-dark text-white border-secondary ${touched.slug && errors.slug ? 'is-invalid' : ''}`}
-                        id="slug"
-                        name="slug"
-                        placeholder="product-url-slug"
+                        className={`form-control bg-dark text-white border-secondary ${touched.arabicTitle && errors.arabicTitle ? 'is-invalid' : ''}`}
+                        id="arabicTitle"
+                        name="arabicTitle"
+                        placeholder="أدخل عنوان المنتج بالعربية"
+                        dir="rtl"
                       />
-                      <ErrorMessage name="slug" component="div" className="invalid-feedback" />
-                      <small className="form-text text-muted">Auto-generated from title, you can edit if needed</small>
+                      <ErrorMessage name="arabicTitle" component="div" className="invalid-feedback" />
                     </div>
                   </div>
                   
@@ -270,24 +252,24 @@ export default function AddProduct() {
                     </div>
                   </div>
                   
-                  {/* Category */}
+                  {/* Subcategory */}
                   <div className="col-md-6">
                     <div className="form-group mb-3">
-                      <label htmlFor="categoryId" className="form-label">Category *</label>
+                      <label htmlFor="subCategoryId" className="form-label">Subcategory *</label>
                       <Field
                         as="select"
-                        className={`form-select bg-dark text-white border-secondary ${touched.categoryId && errors.categoryId ? 'is-invalid' : ''}`}
-                        id="categoryId"
-                        name="categoryId"
+                        className={`form-select bg-dark text-white border-secondary ${touched.subCategoryId && errors.subCategoryId ? 'is-invalid' : ''}`}
+                        id="subCategoryId"
+                        name="subCategoryId"
                       >
-                        <option value="">Select Category</option>
-                        {Array.isArray(categories) && categories.map(category => (
-                          <option key={category.id} value={category.id}>
-                            {category.name}
+                        <option value="">Select Subcategory</option>
+                        {Array.isArray(subCategories) && subCategories.map(subCategory => (
+                          <option key={subCategory.id} value={subCategory.id}>
+                            {subCategory.name} - {subCategory.arabicName}
                           </option>
                         ))}
                       </Field>
-                      <ErrorMessage name="categoryId" component="div" className="invalid-feedback" />
+                      <ErrorMessage name="subCategoryId" component="div" className="invalid-feedback" />
                     </div>
                   </div>
                   
@@ -297,15 +279,13 @@ export default function AddProduct() {
                       <label htmlFor="mainImage" className="form-label">Main Image *</label>
                       <input
                         type="file"
-                        className={`form-control bg-dark text-white border-secondary ${!values.mainImage && 'is-invalid'}`}
+                        className={`form-control bg-dark text-white border-secondary ${touched.mainImage && errors.mainImage ? 'is-invalid' : ''}`}
                         id="mainImage"
                         name="mainImage"
                         onChange={(event) => handleMainImageChange(event, setFieldValue)}
                         accept="image/*"
                       />
-                      {!values.mainImage && (
-                        <div className="invalid-feedback">Main image is required</div>
-                      )}
+                      <ErrorMessage name="mainImage" component="div" className="invalid-feedback" />
                     </div>
                     
                     {mainImagePreview && (
@@ -330,7 +310,7 @@ export default function AddProduct() {
                   </div>
                   
                   {/* Sub Images */}
-                  <div className="col-12">
+                  <div className="col-md-6">
                     <div className="form-group mb-3">
                       <label htmlFor="subImages" className="form-label">Additional Images</label>
                       <input
@@ -342,7 +322,7 @@ export default function AddProduct() {
                         accept="image/*"
                         multiple
                       />
-                      <small className="form-text text-muted">You can select multiple images</small>
+                      <small className="form-text text-muted">You can select multiple images (optional)</small>
                     </div>
                     
                     {subImagesPreview.length > 0 && (
@@ -370,19 +350,36 @@ export default function AddProduct() {
                     )}
                   </div>
                   
-                  {/* Description */}
+                  {/* English Description */}
                   <div className="col-12">
                     <div className="form-group mb-3">
-                      <label htmlFor="description" className="form-label">Description *</label>
+                      <label htmlFor="description" className="form-label">English Description *</label>
                       <Field
                         as="textarea"
                         className={`form-control bg-dark text-white border-secondary ${touched.description && errors.description ? 'is-invalid' : ''}`}
                         id="description"
                         name="description"
-                        rows="5"
-                        placeholder="Enter product description"
+                        rows="4"
+                        placeholder="Enter product description in English"
                       />
                       <ErrorMessage name="description" component="div" className="invalid-feedback" />
+                    </div>
+                  </div>
+                  
+                  {/* Arabic Description */}
+                  <div className="col-12">
+                    <div className="form-group mb-3">
+                      <label htmlFor="arabicDescription" className="form-label">Arabic Description *</label>
+                      <Field
+                        as="textarea"
+                        className={`form-control bg-dark text-white border-secondary ${touched.arabicDescription && errors.arabicDescription ? 'is-invalid' : ''}`}
+                        id="arabicDescription"
+                        name="arabicDescription"
+                        rows="4"
+                        placeholder="أدخل وصف المنتج بالعربية"
+                        dir="rtl"
+                      />
+                      <ErrorMessage name="arabicDescription" component="div" className="invalid-feedback" />
                     </div>
                   </div>
                   
@@ -392,7 +389,7 @@ export default function AddProduct() {
                       <button
                         type="button"
                         className="btn btn-outline-secondary me-2"
-                        onClick={() => navigate('/seller/my-products')}
+                        onClick={() => navigate('/myProducts')}
                       >
                         Cancel
                       </button>
