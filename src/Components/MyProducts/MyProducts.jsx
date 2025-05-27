@@ -10,10 +10,7 @@ export default function MyProducts() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [categories, setCategories] = useState([]);
   const [error, setError] = useState(null);
-  const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [deletingProductId, setDeletingProductId] = useState(null);
 
   // Fetch products owned by the seller
@@ -46,29 +43,7 @@ export default function MyProducts() {
     }
   }
 
-  // Fetch categories from the API
-  async function getCategories() {
-    setCategoriesLoading(true);
-    
-    try {
-      const { data } = await axios.get('https://fb-m90x.onrender.com/seller/getCategories');
-      
-      // Debug logging
-      console.log('Categories API Response:', data);
-      
-      if (data?.status === 'success' && Array.isArray(data?.data?.categories)) {
-        setCategories(data.data.categories);
-      } else {
-        console.error('Invalid categories data structure:', data);
-        setCategories([]);
-      }
-    } catch (err) {
-      console.error('Error fetching categories:', err);
-      // Don't set error state here to avoid overriding product errors
-    } finally {
-      setCategoriesLoading(false);
-    }
-  }
+
 
   // Handle delete product
   const handleDeleteProduct = async (productId) => {
@@ -102,7 +77,6 @@ export default function MyProducts() {
 
   useEffect(() => {
     getOwnProducts();
-    getCategories();
   }, []);
 
   // Format price safely
@@ -127,28 +101,19 @@ export default function MyProducts() {
     return '0.00'; // Fallback
   };
 
-  // Filter products based on search term and category
+  // Filter products based on search term
   const filteredProducts = products.filter(product => {
     // Handle potentially missing properties safely
     const productName = product?.title || '';
-    const productCategoryId = product?.categoryId || '';
     
     const matchesSearch = productName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || productCategoryId === categoryFilter;
     
-    return matchesSearch && matchesCategory;
+    return matchesSearch;
   });
 
-  // Refresh products and categories handler
+  // Refresh products handler
   const handleRefresh = () => {
     getOwnProducts();
-    getCategories();
-  };
-
-  // Get category name by id
-  const getCategoryName = (categoryId) => {
-    const category = categories.find(cat => cat.id === categoryId);
-    return category ? category.name : 'Unknown';
   };
 
   return (
@@ -170,7 +135,7 @@ export default function MyProducts() {
       <div className="card bg-dark text-white mb-4">
         <div className="card-body">
           <div className="row g-3">
-            <div className="col-md-6">
+            <div className="col-md-12">
               <div className="input-group">
                 <span className="input-group-text bg-dark text-white border-secondary">
                   <i className="fas fa-search"></i>
@@ -182,31 +147,6 @@ export default function MyProducts() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
-              </div>
-            </div>
-            <div className="col-md-6">
-              <div className="input-group">
-                <span className="input-group-text bg-dark text-white border-secondary">
-                  <i className="fas fa-filter"></i>
-                </span>
-                <select
-                  className="form-select bg-dark text-white border-secondary"
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  disabled={categoriesLoading}
-                >
-                  <option value="all">All Categories</option>
-                  {Array.isArray(categories) && categories.map((category) => (
-                    <option key={category.id} value={category.id.toString()}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-                {categoriesLoading && (
-                  <span className="input-group-text bg-dark text-white border-secondary">
-                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                  </span>
-                )}
               </div>
             </div>
           </div>
@@ -261,13 +201,6 @@ export default function MyProducts() {
                 </div>
                 <div className="card-body d-flex flex-column">
                   <h5 className="card-title text-truncate">{product.title || 'Unnamed Product'}</h5>
-                  {product.categoryId && (
-                    <p className="card-text mb-1">
-                      <span className="badge bg-secondary">
-                        {getCategoryName(product.categoryId)}
-                      </span>
-                    </p>
-                  )}
                   <p className="card-text text-success fw-bold mt-2 mb-3">
                     ${formatPrice(product.price)}
                   </p>
