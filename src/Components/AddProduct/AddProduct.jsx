@@ -19,9 +19,10 @@ export default function AddProduct() {
     const fetchSubCategories = async () => {
       try {
         // Fetch subcategories directly without category selection
-        const response = await axios.get('https://fb-m90x.onrender.com/seller/getSubCategories/1');
+        const response = await axios.get('https://fb-m90x.onrender.com/seller/getAllSubCategories');
+        console.log(response.data.data);
         if (response.data && response.data.data) {
-          setSubCategories(Array.isArray(response.data.data.subCategories) ? response.data.data.subCategories : []);
+          setSubCategories(Array.isArray(response.data.data) ? response.data.data : []);
         }
       } catch (err) {
         console.error('Error fetching subcategories:', err);

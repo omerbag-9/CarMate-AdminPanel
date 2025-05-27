@@ -94,9 +94,9 @@ export default function GetSpecificProduct() {
     const fetchSubCategories = async () => {
         setSubCategoriesLoading(true);
         try {
-            const response = await axios.get('https://fb-m90x.onrender.com/seller/getSubCategories/1');
-            if (response.data.status === 'success' && Array.isArray(response.data.data.subCategories)) {
-                setSubCategories(response.data.data.subCategories);
+            const response = await axios.get('https://fb-m90x.onrender.com/seller/getAllSubCategories');
+            if (response.data.status === 'success' && Array.isArray(response.data.data)) {
+                setSubCategories(response.data.data);
             } else {
                 setSubCategories([]);
             }
@@ -369,7 +369,7 @@ export default function GetSpecificProduct() {
                                     <option value="">Select Subcategory</option>
                                     {subCategories.map(subCategory => (
                                         <option key={subCategory.id} value={subCategory.id}>
-                                            {subCategory.name}
+                                            {subCategory.name} - {subCategory.arabicName}
                                         </option>
                                     ))}
                                 </select>
